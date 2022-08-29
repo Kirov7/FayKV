@@ -2,6 +2,7 @@ package skipList
 
 import (
 	"FayKV/utils"
+	"bytes"
 	"math/rand"
 	"sync"
 )
@@ -48,18 +49,43 @@ func (list *SkipList) Close() error {
 }
 
 func (list *SkipList) calcScore(key []byte) (score float64) {
-	//todo implement there
-	panic("Need to be implemented")
+	var hash uint64
+	l := len(key)
+
+	if l > 8 {
+		l = 8
+	}
+
+	for i := 0; i < l; i++ {
+		shift := uint(64 - 8 - i*8)
+		hash |= uint64(key[i]) << shift
+	}
+
+	score = float64(hash)
+	return
 }
 
 func (list *SkipList) compare(score float64, key []byte, next *Element) int {
-	//todo implement there
-	panic("Need to be implemented")
+	if score == next.score {
+		return bytes.Compare(key, next.entry.Key)
+	}
+
+	if score < next.score {
+		return -1
+	} else {
+		return 1
+	}
 }
 
 func (list *SkipList) randLevel() int {
-	//todo implement there
-	panic("Need to be implemented")
+	// 2^(-i) 的概率返回 i
+	for i := 0; i < list.maxLevel; i++ {
+		if list.rand.Intn(2) == 0 {
+			return i
+		}
+	}
+
+	return list.maxLevel
 }
 
 func (list *SkipList) Size() int64 {
