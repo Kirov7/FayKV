@@ -48,6 +48,7 @@ func (f *Filter) calcHashNum(bitsPerKey int) (k uint32) {
 	return
 }
 
+// appendFilter 将多个key放入bloomFilter中
 func (f *Filter) appendFilter(keys []uint32, bitsPerKey int) []bool {
 	if bitsPerKey < 0 {
 		bitsPerKey = 0
