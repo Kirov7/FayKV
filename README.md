@@ -1,2 +1,2 @@
 # FayKV
-Key-Value storage engine based on LSM-Tree like leveldb
+Key-Value storage engine based on LSM-Tree like levelDB
