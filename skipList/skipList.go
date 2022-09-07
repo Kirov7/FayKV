@@ -1,8 +1,8 @@
 package skipList
 
 import (
-	"FayKV/utils"
 	"bytes"
+	"github.com/Kirov7/FayKV/utils"
 	"math/rand"
 	"sync"
 )
@@ -98,6 +98,7 @@ func (list *SkipList) Search(key []byte) (e *Entry) {
 	return nil
 }
 
+// Close 关闭skipList资源
 func (list *SkipList) Close() error {
 	return nil
 }
@@ -123,6 +124,7 @@ func (list *SkipList) calcScore(key []byte) (score float64) {
 	return
 }
 
+// compare 比较器函数
 func (list *SkipList) compare(score float64, key []byte, next *Element) int {
 	if score == next.score {
 		return bytes.Compare(key, next.entry.Key)
