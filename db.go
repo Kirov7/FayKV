@@ -1,12 +1,16 @@
 package FayKV
 
-import "github.com/Kirov7/FayKV/skipList"
+import (
+	"github.com/Kirov7/FayKV/skipList"
+	"github.com/Kirov7/FayKV/skipList/iterator"
+)
 
 type KvAPI interface {
 	Set(data *skipList.Element) error
 	Get(key []byte) (*skipList.Entry, error)
 	Del(key []byte) error
 	Info() *Stats
+	NewIterator(opt *iterator.Options) iterator.Iterator
 	Close() error
 }
 
@@ -29,6 +33,11 @@ func (db *DB) Del(key []byte) error {
 }
 
 func (db *DB) Info() *Stats {
+	// todo implement there
+	panic("todo")
+}
+
+func (db *DB) NewIterator(opt *iterator.Options) iterator.Iterator {
 	// todo implement there
 	panic("todo")
 }
