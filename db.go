@@ -9,3 +9,31 @@ type KvAPI interface {
 	Info() *Stats
 	Close() error
 }
+
+type DB struct {
+}
+
+func (db *DB) Set(data *skipList.Element) error {
+	// todo implement there
+	panic("todo")
+}
+
+func (db *DB) Get(key []byte) (*skipList.Entry, error) {
+	// todo implement there
+	panic("todo")
+}
+
+func (db *DB) Del(key []byte) error {
+	// todo implement there
+	panic("todo")
+}
+
+func (db *DB) Info() *Stats {
+	// todo implement there
+	panic("todo")
+}
+
+func (db *DB) Close() error {
+	// todo implement there
+	panic("todo")
+}
