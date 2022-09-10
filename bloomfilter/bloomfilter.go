@@ -5,7 +5,7 @@ import (
 )
 
 type Filter struct {
-	//todo make it be a bitmap
+	// todo make it be a bitmap
 	filter  []bool
 	hashNum int
 }

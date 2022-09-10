@@ -7,6 +7,7 @@ import (
 	"sync"
 )
 
+// todo change the data structure for big memory
 const (
 	defaultMaxHeight = 64
 )
