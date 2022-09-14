@@ -94,7 +94,7 @@ func (f *Filter) mayContain(key uint32) bool {
 	return true
 }
 
-// Hash 采用类murmur Hash进行计算
+// Hash 采用类murmur Hash进行高效的哈希计算
 func Hash(b []byte) uint32 {
 	const (
 		seed = 0xbc9f1d34

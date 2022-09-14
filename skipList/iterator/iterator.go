@@ -13,7 +13,8 @@ type Iterator interface {
 type Item interface {
 	Entry() *skipList.Element
 }
+
 type Options struct {
-	Prefix []byte
-	IsAsc  bool
+	Prefix []byte // 前缀
+	IsAsc  bool   // 是否升序
 }
