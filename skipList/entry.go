@@ -5,7 +5,7 @@ import "time"
 type Entry struct {
 	Key       []byte
 	Value     []byte
-	ExpiresAt uint64
+	ExpiresAt uint64 // 过期时间
 }
 
 func NewEntry(key, value []byte) *Entry {
@@ -15,6 +15,7 @@ func NewEntry(key, value []byte) *Entry {
 	}
 }
 
+// WithTTL 为Entry添加自动过期时间
 func (e *Entry) WithTTL(dur time.Duration) *Entry {
 	e.ExpiresAt = uint64(time.Now().Add(dur).Unix())
 	return e
