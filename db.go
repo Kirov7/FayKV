@@ -15,6 +15,7 @@ type KvAPI interface {
 }
 
 type DB struct {
+	stats *Stats
 }
 
 func (db *DB) Set(data *skipList.Element) error {
@@ -33,8 +34,7 @@ func (db *DB) Del(key []byte) error {
 }
 
 func (db *DB) Info() *Stats {
-	// todo implement there
-	panic("todo")
+	return db.stats
 }
 
 func (db *DB) NewIterator(opt *iterator.Options) iterator.Iterator {
