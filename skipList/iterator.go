@@ -1,6 +1,4 @@
-package iterator
-
-import "github.com/Kirov7/FayKV/skipList"
+package skipList
 
 type Iterator interface {
 	Next()
@@ -11,7 +9,7 @@ type Iterator interface {
 }
 
 type Item interface {
-	Entry() *skipList.Element
+	Entry() *Entry
 }
 
 type Options struct {

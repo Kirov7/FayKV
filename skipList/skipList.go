@@ -3,6 +3,8 @@ package skipList
 import (
 	"bytes"
 	"github.com/Kirov7/FayKV/utils"
+	"github.com/pkg/errors"
+	"log"
 	"math/rand"
 	"sync"
 )
@@ -152,4 +154,43 @@ func (list *SkipList) randLevel() int {
 
 func (list *SkipList) Size() int64 {
 	return list.size
+}
+
+func (list *SkipList) NewSkipListIterator() Iterator {
+	return &skipListIterator{skipList: list}
+}
+
+type skipListIterator struct {
+	skipList *SkipList
+	e        *Entry
+}
+
+func (s *skipListIterator) Next() {
+
+	if !s.Valid() {
+		log.Fatalf("%+v", errors.Errorf("has no next"))
+	}
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *skipListIterator) Valid() bool {
+	return s.e != nil
+}
+
+func (s *skipListIterator) Rewind() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *skipListIterator) Item() Item {
+	return &Entry{
+		Key:       s.e.Key,
+		Value:     s.e.Value,
+		ExpiresAt: s.e.ExpiresAt,
+	}
+}
+
+func (s *skipListIterator) Close() error {
+	return nil
 }

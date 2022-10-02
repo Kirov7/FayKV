@@ -24,3 +24,7 @@ func (e *Entry) WithTTL(dur time.Duration) *Entry {
 func (e *Entry) Size() int64 {
 	return int64(len(e.Key) + len(e.Value))
 }
+
+func (e *Entry) Entry() *Entry {
+	return e
+}

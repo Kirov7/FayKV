@@ -2,7 +2,6 @@ package FayKV
 
 import (
 	"github.com/Kirov7/FayKV/skipList"
-	"github.com/Kirov7/FayKV/skipList/iterator"
 )
 
 type KvAPI interface {
@@ -10,7 +9,7 @@ type KvAPI interface {
 	Get(key []byte) (*skipList.Entry, error)
 	Del(key []byte) error
 	Info() *Stats
-	NewIterator(opt *iterator.Options) iterator.Iterator
+	NewIterator(opt *skipList.Options) skipList.Iterator
 	Close() error
 }
 
@@ -37,7 +36,7 @@ func (db *DB) Info() *Stats {
 	return db.stats
 }
 
-func (db *DB) NewIterator(opt *iterator.Options) iterator.Iterator {
+func (db *DB) NewIterator(opt *skipList.Options) skipList.Iterator {
 	// todo implement there
 	panic("todo")
 }
