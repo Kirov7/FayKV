@@ -1,2 +1,2 @@
 # FayKV
-Key-Value storage engine based on LSM-Tree
+Key-Value storage engine based on standard LSM-Tree
