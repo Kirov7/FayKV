@@ -1,4 +1,4 @@
-package bloomfilter
+package cache
 
 import (
 	"math/rand"
