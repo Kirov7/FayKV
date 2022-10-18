@@ -8,9 +8,8 @@ import (
 )
 
 const (
-	defaultMaxHeight = 64
-	maxHeight        = 20
-	heightIncrease   = math.MaxUint32 / 3
+	maxHeight      = 20
+	heightIncrease = math.MaxUint32 / 3
 )
 
 type node struct {
