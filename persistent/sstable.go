@@ -6,7 +6,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"io"
-	"log"
 	"os"
 	"sync"
 	"syscall"
@@ -28,9 +27,8 @@ type SSTable struct {
 
 func OpenSSTable(opt *Options) *SSTable {
 	f, err := OpenMmapFile(opt.FileName, os.O_CREATE|os.O_RDWR, opt.MaxSize)
-	if err != nil {
-		log.Fatal("open mmap file error")
-	}
+	utils.Panic(err)
+
 	return &SSTable{
 		f:   f,
 		fid: opt.FID,
