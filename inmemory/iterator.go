@@ -1,4 +1,4 @@
-package skipList
+package inmemory
 
 type Iterator interface {
 	Next()

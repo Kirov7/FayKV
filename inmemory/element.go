@@ -1,4 +1,4 @@
-package skipList
+package inmemory
 
 type Element struct {
 	levels []*Element // levels[i] 第 i 层所指向的下一个节点

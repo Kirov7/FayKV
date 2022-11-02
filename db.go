@@ -1,15 +1,15 @@
 package FayKV
 
 import (
-	"github.com/Kirov7/FayKV/skipList"
+	"github.com/Kirov7/FayKV/inmemory"
 )
 
 type KvAPI interface {
-	Set(data *skipList.Element) error
-	Get(key []byte) (*skipList.Entry, error)
+	Set(data *inmemory.Element) error
+	Get(key []byte) (*inmemory.Entry, error)
 	Del(key []byte) error
 	Info() *Stats
-	NewIterator(opt *skipList.Options) skipList.Iterator
+	NewIterator(opt *inmemory.Options) inmemory.Iterator
 	Close() error
 }
 
@@ -17,12 +17,12 @@ type DB struct {
 	stats *Stats
 }
 
-func (db *DB) Set(data *skipList.Element) error {
+func (db *DB) Set(data *inmemory.Element) error {
 	// todo implement there
 	panic("todo")
 }
 
-func (db *DB) Get(key []byte) (*skipList.Entry, error) {
+func (db *DB) Get(key []byte) (*inmemory.Entry, error) {
 	// todo implement there
 	panic("todo")
 }
@@ -36,7 +36,7 @@ func (db *DB) Info() *Stats {
 	return db.stats
 }
 
-func (db *DB) NewIterator(opt *skipList.Options) skipList.Iterator {
+func (db *DB) NewIterator(opt *inmemory.Options) inmemory.Iterator {
 	// todo implement there
 	panic("todo")
 }

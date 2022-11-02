@@ -1,4 +1,4 @@
-package skipList
+package inmemory
 
 import (
 	"log"
@@ -273,11 +273,11 @@ func (s *SkipList) findNear(key []byte, left bool, allowEqual bool) (*node, bool
 				level--
 				continue
 			}
-			// the last node of the skipList don`t have other bigger node
+			// the last node of the inmemory don`t have other bigger node
 			if !left {
 				return nil, false
 			}
-			// the first node of the skipList don`t have other smaller node
+			// the first node of the inmemory don`t have other smaller node
 			if curNode == s.getHead() {
 				return nil, false
 			}
