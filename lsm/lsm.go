@@ -24,6 +24,7 @@ type Options struct {
 	BaseTableSize       int64
 	NumLevelZeroTables  int
 	MaxLevelNum         int
+	DiscardStatsCh      *chan map[uint32]int64
 }
 
 func NewLSM(opt *Options) *LSM {
@@ -34,6 +35,10 @@ func NewLSM(opt *Options) *LSM {
 	return lsm
 }
 
-func (l *LSM) Close() error {
+func (lsm *LSM) recovery() (*memTable, []*memTable) {
+	panic("todo")
+}
+
+func (lsm *LSM) Close() error {
 	panic("todo")
 }
