@@ -55,6 +55,26 @@ func OpenMmapFileSys(fd *os.File, size int, writable bool) (*MmapFile, error) {
 	}, err
 }
 
+func (m *MmapFile) Close() error {
+	if m.Fd == nil {
+		return nil
+	}
+	if err := m.Sync(); err != nil {
+		return errors.Wrapf(err, "while sync file: %s", m.Fd.Name())
+	}
+	if err := mmap.Munmap(m.Data); err != nil {
+		return errors.Wrapf(err, "while munmap file: %s", m.Fd.Name())
+	}
+	return m.Fd.Close()
+}
+
+func (m *MmapFile) Sync() error {
+	if m == nil {
+		return nil
+	}
+	return mmap.Msync(m.Data)
+}
+
 func SyncDir(dir string) error {
 	df, err := os.Open(dir)
 	if err != nil {
