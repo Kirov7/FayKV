@@ -25,11 +25,15 @@ func (lsm *LSM) initLevelManager(opt *Options) *levelManager {
 	return lm
 }
 
-func (lm *levelManager) loadManifest() (err error) {
+func (lm *levelManager) loadManifest() error {
 	panic("todo")
 }
 
 func (lm *levelManager) build() error {
+	panic("todo")
+}
+
+func (lm *levelManager) flush(immutable *memTable) error {
 	panic("todo")
 }
 
