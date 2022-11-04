@@ -12,6 +12,8 @@ import (
 	"sync"
 )
 
+const WalFileExt string = ".wal"
+
 type WalFile struct {
 	lock    *sync.RWMutex
 	f       *MmapFile

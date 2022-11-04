@@ -10,8 +10,6 @@ import (
 	"sync/atomic"
 )
 
-const walFileExt string = ".wal"
-
 type memTable struct {
 	lsm        *LSM
 	wal        *persistent.WalFile
@@ -51,5 +49,5 @@ func (m *memTable) close() error {
 }
 
 func mtFilePath(dir string, fid uint64) string {
-	return filepath.Join(dir, fmt.Sprintf("%05d%s", fid, walFileExt))
+	return filepath.Join(dir, fmt.Sprintf("%05d%s", fid, persistent.WalFileExt))
 }
