@@ -7,7 +7,7 @@ var (
 	ErrEmptyKey         = errors.New("Key cannot be empty")
 )
 
-// Panic 如果err 不为nil 则panicc
+// Panic if err != nil then panic
 func Panic(err error) {
 	if err != nil {
 		panic(err)
