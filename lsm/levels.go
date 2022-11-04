@@ -34,7 +34,18 @@ func (lm *levelManager) build() error {
 }
 
 func (lm *levelManager) flush(immutable *memTable) error {
+	// Assign a fid
+	fid := immutable.wal.Fid()
+	sstName := persistent.FileNameSSTable(lm.opt.WorkDir, fid)
+	builder := newTableBuilder(lm.opt)
+	iter := immutable.sl.NewSkipListIterator()
+	for iter.Rewind(); iter.Valid(); iter.Next() {
+		entry := iter.Item().Entry()
+		builder.add(entry, false)
+	}
+	_ = sstName
 	panic("todo")
+
 }
 
 type levelHandler struct {

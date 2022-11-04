@@ -1,12 +1,14 @@
 package persistent
 
 import (
+	"fmt"
 	"github.com/Kirov7/FayKV/pb"
 	"github.com/Kirov7/FayKV/utils"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"io"
 	"os"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -109,4 +111,8 @@ func (ss *SSTable) readCheckError(off, sz int) []byte {
 	buf, err := ss.read(off, sz)
 	utils.Panic(err)
 	return buf
+}
+
+func FileNameSSTable(dir string, id uint64) string {
+	return filepath.Join(dir, fmt.Sprintf("%05d.sst", id))
 }

@@ -78,6 +78,10 @@ func NewSkipList(memPoolSize int64) *SkipList {
 	}
 }
 
+func (s *SkipList) IncrRef() {
+	atomic.AddInt32(&s.ref, 1)
+}
+
 func (n *node) getValueOffset() (uint32, uint32) {
 	value := atomic.LoadUint64(&n.value)
 	return decodeValue(value)
@@ -338,6 +342,11 @@ func FastRand() uint32
 type SkipListIterator struct {
 	list *SkipList
 	n    *node
+}
+
+func (s *SkipList) NewSkipListIterator() Iterator {
+	s.IncrRef()
+	return &SkipListIterator{list: s}
 }
 
 func (s *SkipListIterator) Next() {
