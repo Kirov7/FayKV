@@ -94,13 +94,13 @@ func WalCodec(buf *bytes.Buffer, e *inmemory.Entry) int {
 	// encode header.
 	var headerEnc [maxHeaderSize]byte
 	sz := h.Encode(headerEnc[:])
-	utils.Panic2(writer.Write(headerEnc[:sz]))
-	utils.Panic2(writer.Write(e.Key))
-	utils.Panic2(writer.Write(e.Value))
+	utils.PanicTwoParams(writer.Write(headerEnc[:sz]))
+	utils.PanicTwoParams(writer.Write(e.Key))
+	utils.PanicTwoParams(writer.Write(e.Value))
 	// write crc32 hash.
 	var crcBuf [crc32.Size]byte
 	binary.BigEndian.PutUint32(crcBuf[:], hash.Sum32())
-	utils.Panic2(buf.Write(crcBuf[:]))
+	utils.PanicTwoParams(buf.Write(crcBuf[:]))
 	// return encoded length.
 	return len(headerEnc[:sz]) + len(e.Key) + len(e.Value) + len(crcBuf)
 }

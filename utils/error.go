@@ -14,7 +14,7 @@ func Panic(err error) {
 	}
 }
 
-func Panic2(_ interface{}, err error) {
+func PanicTwoParams(_ interface{}, err error) {
 	Panic(err)
 }
 
