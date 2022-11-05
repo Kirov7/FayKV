@@ -1,7 +1,6 @@
 package lsm
 
 import (
-	"github.com/Kirov7/FayKV/inmemory"
 	"github.com/Kirov7/FayKV/persistent"
 	"github.com/Kirov7/FayKV/utils"
 )
@@ -39,7 +38,7 @@ func NewLSM(opt *Options) *LSM {
 	return lsm
 }
 
-func (lsm LSM) Set(entry *inmemory.Entry) (err error) {
+func (lsm LSM) Set(entry *utils.Entry) (err error) {
 	if entry == nil || len(entry.Key) == 0 {
 		return utils.ErrEmptyKey
 	}
