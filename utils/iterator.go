@@ -1,4 +1,4 @@
-package inmemory
+package utils
 
 type Iterator interface {
 	Next()
