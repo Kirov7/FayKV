@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Kirov7/FayKV/inmemory"
 	"github.com/Kirov7/FayKV/persistent"
+	"github.com/Kirov7/FayKV/utils"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -30,7 +31,7 @@ func (lsm *LSM) NewMemtable() *memTable {
 	return &memTable{wal: persistent.OpenWalFile(fileOpt), sl: inmemory.NewSkipList(int64(1 << 20)), lsm: lsm}
 }
 
-func (m *memTable) set(entry *inmemory.Entry) error {
+func (m *memTable) set(entry *utils.Entry) error {
 	// 写到wal 日志中，防止崩溃
 	if err := m.wal.Write(entry); err != nil {
 		return err

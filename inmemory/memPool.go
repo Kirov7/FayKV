@@ -1,6 +1,7 @@
 package inmemory
 
 import (
+	"github.com/Kirov7/FayKV/utils"
 	"log"
 	"sync/atomic"
 	"unsafe"
@@ -67,7 +68,7 @@ func (a *MemPool) putNode(height int) uint32 {
 	return m
 }
 
-func (a *MemPool) putVal(v ValueStruct) uint32 {
+func (a *MemPool) putVal(v utils.ValueStruct) uint32 {
 	l := v.EncodedSize()
 	offset := a.allocate(l)
 	v.EncodeValue(a.buf[offset:])
@@ -95,7 +96,7 @@ func (a *MemPool) getKey(offset uint32, size uint16) []byte {
 	return a.buf[offset : offset+uint32(size)]
 }
 
-func (a *MemPool) getVal(offset uint32, size uint32) (ret ValueStruct) {
+func (a *MemPool) getVal(offset uint32, size uint32) (ret utils.ValueStruct) {
 	ret.DecodeValue(a.buf[offset : offset+size])
 	return
 }
