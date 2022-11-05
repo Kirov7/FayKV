@@ -3,7 +3,6 @@ package persistent
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/Kirov7/FayKV/inmemory"
 	"github.com/Kirov7/FayKV/utils"
 	"hash/crc32"
 	"io"
@@ -58,7 +57,7 @@ func OpenWalFile(opt *Options) *WalFile {
 	return wf
 }
 
-func (wf WalFile) Write(entry *inmemory.Entry) error {
+func (wf WalFile) Write(entry *utils.Entry) error {
 	panic("todo")
 }
 
@@ -80,7 +79,7 @@ func (h *WalHeader) Encode(out []byte) int {
 	return index
 }
 
-func WalCodec(buf *bytes.Buffer, e *inmemory.Entry) int {
+func WalCodec(buf *bytes.Buffer, e *utils.Entry) int {
 	buf.Reset()
 	h := WalHeader{
 		KeyLen:    uint32(len(e.Key)),
@@ -105,7 +104,7 @@ func WalCodec(buf *bytes.Buffer, e *inmemory.Entry) int {
 	return len(headerEnc[:sz]) + len(e.Key) + len(e.Value) + len(crcBuf)
 }
 
-func EstimateWalCodecSize(e *inmemory.Entry) int {
+func EstimateWalCodecSize(e *utils.Entry) int {
 	return len(e.Key) + len(e.Value) + 8 /* ExpiresAt uint64 */ +
 		crc32.Size + maxHeaderSize
 }
