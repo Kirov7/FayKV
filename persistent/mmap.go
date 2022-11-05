@@ -32,20 +32,20 @@ func OpenMmapFileSys(fd *os.File, size int, writable bool) (*MmapFile, error) {
 		return nil, errors.Wrapf(err, "stat file error: %s", filename)
 	}
 
-	fileSzie := fi.Size()
-	if size > 0 && fileSzie == 0 {
+	fileSize := fi.Size()
+	if size > 0 && fileSize == 0 {
 		err = fd.Truncate(int64(size))
 		if err != nil {
 			return nil, errors.Wrapf(err, "turncate error: %s", filename)
 		}
-		fileSzie = int64(size)
+		fileSize = int64(size)
 	}
-	buf, err := mmap.Mmap(fd, writable, fileSzie)
+	buf, err := mmap.Mmap(fd, writable, fileSize)
 	if err != nil {
-		return nil, errors.Wrapf(err, "mmap mapping %s with size %d error", fd.Name(), fileSzie)
+		return nil, errors.Wrapf(err, "mmap mapping %s with size %d error", fd.Name(), fileSize)
 	}
 
-	if fileSzie == 0 {
+	if fileSize == 0 {
 		dir, _ := filepath.Split(filename)
 		go SyncDir(dir)
 	}
