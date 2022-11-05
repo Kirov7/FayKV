@@ -2,7 +2,7 @@ package lsm
 
 import (
 	"fmt"
-	"github.com/Kirov7/FayKV/cache"
+	faycache "github.com/Kirov7/FayKV/cache"
 	"github.com/Kirov7/FayKV/inmemory"
 	"github.com/Kirov7/FayKV/utils"
 	"github.com/pkg/errors"
@@ -66,9 +66,13 @@ func newTableBuilder(opt *Options) *tableBuilder {
 	}
 }
 
-func (tb *tableBuilder) add(entry *inmemory.Entry, isStale bool) {
+func (tb *tableBuilder) flush(lm *levelManager, tableName string) (t *table, err error) {
+	panic("todo")
+}
+
+func (tb *tableBuilder) add(entry *utils.Entry, isStale bool) {
 	key := entry.Key
-	val := inmemory.ValueStruct{
+	val := utils.ValueStruct{
 		Meta:      entry.Meta,
 		Value:     entry.Value,
 		ExpiresAt: entry.ExpiresAt,
@@ -82,7 +86,7 @@ func (tb *tableBuilder) add(entry *inmemory.Entry, isStale bool) {
 		// create new block and start writing
 		tb.curBlock = &block{data: make([]byte, tb.opt.BlockSize)}
 	}
-	tb.keyHashes = append(tb.keyHashes, cache.Hash(inmemory.ParseKey(key)))
+	tb.keyHashes = append(tb.keyHashes, faycache.Hash(inmemory.ParseKey(key)))
 	if version := inmemory.ParseTs(key); version > tb.maxVersion {
 		tb.maxVersion = version
 	}
@@ -111,7 +115,7 @@ func (tb *tableBuilder) add(entry *inmemory.Entry, isStale bool) {
 	val.EncodeValue(dst)
 }
 
-func (tb *tableBuilder) tryFinishBlock(entry *inmemory.Entry) bool {
+func (tb *tableBuilder) tryFinishBlock(entry *utils.Entry) bool {
 	panic("todo")
 }
 
@@ -148,4 +152,22 @@ func (tb *tableBuilder) keyDiff(newKey []byte) []byte {
 		}
 	}
 	return newKey[i:]
+}
+
+type blockIterator struct {
+	data         []byte
+	idx          int
+	err          error
+	baseKey      []byte
+	key          []byte
+	val          []byte
+	entryOffsets []uint32
+	block        *block
+
+	tableID uint64
+	blockID int
+
+	prevOverlap uint16
+
+	it utils.Item
 }
