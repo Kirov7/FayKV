@@ -1,4 +1,4 @@
-package inmemory
+package utils
 
 import (
 	"encoding/binary"
