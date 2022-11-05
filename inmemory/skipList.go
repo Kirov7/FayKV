@@ -1,6 +1,7 @@
 package inmemory
 
 import (
+	"github.com/Kirov7/FayKV/utils"
 	"log"
 	"math"
 	"sync/atomic"
@@ -44,7 +45,7 @@ type SkipList struct {
 	OnClose    func()
 }
 
-func newNode(memPool *MemPool, key []byte, v ValueStruct, height int) *node {
+func newNode(memPool *MemPool, key []byte, v utils.ValueStruct, height int) *node {
 	nodeOffset := memPool.putNode(height)
 	keyOffset := memPool.putKey(key)
 	val := encodeValue(memPool.putVal(v), v.EncodedSize())
@@ -68,7 +69,7 @@ func decodeValue(value uint64) (valOffset, valSize uint32) {
 
 func NewSkipList(memPoolSize int64) *SkipList {
 	memPool := NewMemPool(memPoolSize)
-	head := newNode(memPool, nil, ValueStruct{}, maxHeight)
+	head := newNode(memPool, nil, utils.ValueStruct{}, maxHeight)
 	headOff := memPool.getNodeOffset(head)
 	return &SkipList{
 		height:     1,
@@ -104,7 +105,7 @@ func (n *node) casNextOffset(h int, old, val uint32) bool {
 }
 
 // getVs return ValueStruct stored in node
-func (n *node) getVs(memPool *MemPool) ValueStruct {
+func (n *node) getVs(memPool *MemPool) utils.ValueStruct {
 	valOffset, valSize := n.getValueOffset()
 	return memPool.getVal(valOffset, valSize)
 }
@@ -129,10 +130,10 @@ func (s *SkipList) getHead() *node {
 	return s.memPool.getNode(s.headOffset)
 }
 
-func (s *SkipList) Put(e *Entry) {
+func (s *SkipList) Put(e *utils.Entry) {
 	// Since we allow overwrite, we may not need to create a new node. We might not even need to
 	// increase the height. Let's defer these actions.
-	key, v := e.Key, ValueStruct{
+	key, v := e.Key, utils.ValueStruct{
 		Meta:      e.Meta,
 		Value:     e.Value,
 		ExpiresAt: e.ExpiresAt,
@@ -245,15 +246,15 @@ func (s *SkipList) findSpliceForLevel(key []byte, before uint32, level int) (uin
 	}
 }
 
-func (s *SkipList) Search(key []byte) ValueStruct {
+func (s *SkipList) Search(key []byte) utils.ValueStruct {
 	n, _ := s.findNear(key, false, true) // findGreaterOrEqual.
 	if n == nil {
-		return ValueStruct{}
+		return utils.ValueStruct{}
 	}
 
 	nextKey := s.memPool.getKey(n.keyOffset, n.keySize)
 	if !SameKey(key, nextKey) {
-		return ValueStruct{}
+		return utils.ValueStruct{}
 	}
 
 	valOffset, valSize := n.getValueOffset()
@@ -344,7 +345,7 @@ type SkipListIterator struct {
 	n    *node
 }
 
-func (s *SkipList) NewSkipListIterator() Iterator {
+func (s *SkipList) NewSkipListIterator() utils.Iterator {
 	s.IncrRef()
 	return &SkipListIterator{list: s}
 }
@@ -362,8 +363,8 @@ func (s *SkipListIterator) Rewind() {
 	s.SeekToFirst()
 }
 
-func (s *SkipListIterator) Item() Item {
-	return &Entry{
+func (s *SkipListIterator) Item() utils.Item {
+	return &utils.Entry{
 		Key:       s.Key(),
 		Value:     s.Value().Value,
 		ExpiresAt: s.Value().ExpiresAt,
@@ -387,7 +388,7 @@ func (s *SkipListIterator) Key() []byte {
 }
 
 // Value returns value.
-func (s *SkipListIterator) Value() ValueStruct {
+func (s *SkipListIterator) Value() utils.ValueStruct {
 	valOffset, valSize := s.n.getValueOffset()
 	return s.list.memPool.getVal(valOffset, valSize)
 }
