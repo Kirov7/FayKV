@@ -47,9 +47,11 @@ func (ss *SSTable) Init() error {
 	statType := stat.Sys().(*syscall.Stat_t)
 	ss.createdAt = time.Unix(statType.Ctim.Sec, statType.Ctim.Nsec)
 	keyBytes := blockOffset.GetKey()
+	// init min key
 	minKey := make([]byte, len(keyBytes))
 	copy(minKey, keyBytes)
 	ss.minKey = minKey
+	// todo init max key
 	ss.maxKey = minKey
 	return nil
 }
@@ -94,6 +96,11 @@ func (ss *SSTable) initTable() (blockOffset *pb.BlockOffset, err error) {
 	return nil, errors.New("read index fail, offset is nil")
 }
 
+// SetMaxKey max 需要使用table的迭代器，来获取最后一个block的最后一个key
+func (ss *SSTable) SetMaxKey(maxKey []byte) {
+	ss.maxKey = maxKey
+}
+
 func (ss *SSTable) read(off, sz int) ([]byte, error) {
 	if len(ss.f.Data) > 0 {
 		if len(ss.f.Data[off:]) < sz {
@@ -101,16 +108,30 @@ func (ss *SSTable) read(off, sz int) ([]byte, error) {
 		}
 		return ss.f.Data[off : off+sz], nil
 	}
-
+	// make sure you can read the data, read data directly from the file
 	res := make([]byte, sz)
 	_, err := ss.f.Fd.ReadAt(res, int64(off))
 	return res, err
+}
+
+// Detele _
+func (ss *SSTable) Detele() error {
+	return ss.f.Delete()
 }
 
 func (ss *SSTable) readCheckError(off, sz int) []byte {
 	buf, err := ss.read(off, sz)
 	utils.Panic(err)
 	return buf
+}
+
+func (ss *SSTable) Indexs() *pb.TableIndex {
+	return ss.idxTables
+}
+
+// FID get fid
+func (ss *SSTable) FID() uint64 {
+	return ss.fid
 }
 
 func FileNameSSTable(dir string, id uint64) string {

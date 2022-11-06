@@ -38,6 +38,22 @@ func (e *Entry) Entry() *Entry {
 	return e
 }
 
+// EncodedSize is the size of the ValueStruct when encoded
+func (e *Entry) EncodedSize() uint32 {
+	sz := len(e.Value)
+	enc := sizeVarint(uint64(e.Meta))
+	enc += sizeVarint(e.ExpiresAt)
+	return uint32(sz + enc)
+}
+
+// EstimateSize
+func (e *Entry) EstimateSize(threshold int) int {
+	if len(e.Value) < threshold {
+		return len(e.Key) + len(e.Value) + 1 // Meta
+	}
+	return len(e.Key) + 12 + 1 // 12 for ValuePointer, 2 for meta.
+}
+
 type ValueStruct struct {
 	Meta      byte
 	Value     []byte

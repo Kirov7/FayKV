@@ -28,3 +28,12 @@ type TableManifest struct {
 type levelManifest struct {
 	Tables map[uint64]struct{}
 }
+
+func (mf *ManifestFile) AddTableMeta(levelNum int, t *TableMeta) (err error) {
+	panic("todo")
+}
+
+type TableMeta struct {
+	ID       uint64
+	Checksum []byte
+}

@@ -1,6 +1,7 @@
 package persistent
 
 import (
+	"fmt"
 	mmap "github.com/Kirov7/FayKV/persistent/syscall"
 	"github.com/pkg/errors"
 	"os"
@@ -53,6 +54,24 @@ func OpenMmapFileSys(fd *os.File, size int, writable bool) (*MmapFile, error) {
 		Data: buf,
 		Fd:   fd,
 	}, err
+}
+
+func (m *MmapFile) Delete() error {
+	if m.Fd == nil {
+		return nil
+	}
+
+	if err := mmap.Munmap(m.Data); err != nil {
+		return fmt.Errorf("while munmap file: %s, error: %v\n", m.Fd.Name(), err)
+	}
+	m.Data = nil
+	if err := m.Fd.Truncate(0); err != nil {
+		return fmt.Errorf("while truncate file: %s, error: %v\n", m.Fd.Name(), err)
+	}
+	if err := m.Fd.Close(); err != nil {
+		return fmt.Errorf("while close file: %s, error: %v\n", m.Fd.Name(), err)
+	}
+	return os.Remove(m.Fd.Name())
 }
 
 func (m *MmapFile) Close() error {

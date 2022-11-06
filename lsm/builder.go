@@ -70,6 +70,8 @@ func (tb *tableBuilder) flush(lm *levelManager, tableName string) (t *table, err
 	panic("todo")
 }
 
+// add encode a kv instance into the sst file
+// Write blocks layer by layer from the sst file
 func (tb *tableBuilder) add(entry *utils.Entry, isStale bool) {
 	key := entry.Key
 	val := utils.ValueStruct{
@@ -116,7 +118,25 @@ func (tb *tableBuilder) add(entry *utils.Entry, isStale bool) {
 }
 
 func (tb *tableBuilder) tryFinishBlock(entry *utils.Entry) bool {
-	panic("todo")
+	if tb.curBlock == nil {
+		return true
+	}
+
+	if len(tb.curBlock.entryOffsets) <= 0 {
+		return false
+	}
+	utils.CondPanic(!((uint32(len(tb.curBlock.entryOffsets))+1)*4+4+8+4 < math.MaxUint32), errors.New("Integer overflow"))
+	entriesOffsetsSize := int64((len(tb.curBlock.entryOffsets)+1)*4 +
+		4 + // size of list
+		8 + // Sum64 in checksum proto
+		4) // checksum length
+	tb.curBlock.estimateSz = int64(tb.curBlock.end) + int64(6 /*header size for entry*/) +
+		int64(len(entry.Key)) + int64(entry.EncodedSize()) + entriesOffsetsSize
+
+	// Integer overflow check for table size.
+	utils.CondPanic(!(uint64(tb.curBlock.end)+uint64(tb.curBlock.estimateSz) < math.MaxUint32), errors.New("Integer overflow"))
+
+	return tb.curBlock.estimateSz > int64(tb.opt.BlockSize)
 }
 
 func (tb *tableBuilder) finishBlock() bool {
