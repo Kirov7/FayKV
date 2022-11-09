@@ -125,6 +125,11 @@ func (tb *tableBuilder) tryFinishBlock(entry *utils.Entry) bool {
 	if len(tb.curBlock.entryOffsets) <= 0 {
 		return false
 	}
+	// len(tb.curBlock.entryOffsets))+1: The number of kv in the original block + the new kv we want to add (1)
+	// *4: Each entry consumes 4 song bytes
+	// +4: offset_len uint32
+	// +8: checksum uint64
+	// +4: checksum_len uint32
 	utils.CondPanic(!((uint32(len(tb.curBlock.entryOffsets))+1)*4+4+8+4 < math.MaxUint32), errors.New("Integer overflow"))
 	entriesOffsetsSize := int64((len(tb.curBlock.entryOffsets)+1)*4 +
 		4 + // size of list
@@ -139,8 +144,23 @@ func (tb *tableBuilder) tryFinishBlock(entry *utils.Entry) bool {
 	return tb.curBlock.estimateSz > int64(tb.opt.BlockSize)
 }
 
-func (tb *tableBuilder) finishBlock() bool {
-	panic("todo")
+func (tb *tableBuilder) finishBlock() {
+	if tb.curBlock == nil || len(tb.curBlock.entryOffsets) == 0 {
+		return
+	}
+	tb.append(utils.U32SliceToBytes(tb.curBlock.entryOffsets))
+	tb.append(utils.U32ToBytes(uint32(len(tb.curBlock.entryOffsets))))
+
+	checksum := tb.calculateChecksum(tb.curBlock.data[:tb.curBlock.end])
+
+	// Append the block checksum and its length.
+	tb.append(checksum)
+	tb.append(utils.U32ToBytes(uint32(len(checksum))))
+	tb.estimateSz += tb.curBlock.estimateSz
+	tb.blockList = append(tb.blockList, tb.curBlock)
+	tb.keyCount += uint32(len(tb.curBlock.entryOffsets))
+	tb.curBlock = nil // 表示当前block 已经被序列化到内存
+	return
 }
 
 // append appends to curBlock.data
@@ -190,4 +210,9 @@ type blockIterator struct {
 	prevOverlap uint16
 
 	it utils.Item
+}
+
+func (tb *tableBuilder) calculateChecksum(data []byte) []byte {
+	checkSum := utils.CalculateChecksum(data)
+	return utils.U64ToBytes(checkSum)
 }
