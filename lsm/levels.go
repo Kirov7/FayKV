@@ -9,7 +9,7 @@ import (
 type levelManager struct {
 	maxFID       uint64
 	opt          *Options
-	cache        *cache
+	cache        *TableCache
 	manifestFile *persistent.ManifestFile
 	levels       []*levelHandler
 	lsm          *LSM
