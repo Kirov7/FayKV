@@ -214,7 +214,7 @@ func (tb *tableBuilder) writeBlockOffsets(tableIndex *pb.TableIndex) []*pb.Block
 	return offsets
 }
 
-func (b *tableBuilder) writeBlockOffset(bl *block, startOffset uint32) *pb.BlockOffset {
+func (tb *tableBuilder) writeBlockOffset(bl *block, startOffset uint32) *pb.BlockOffset {
 	offset := &pb.BlockOffset{}
 	offset.Key = bl.baseKey
 	offset.Len = uint32(bl.end)
