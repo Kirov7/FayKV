@@ -4,7 +4,7 @@ import (
 	fayCache "github.com/Kirov7/FayKV/cache"
 )
 
-type cache struct {
+type TableCache struct {
 	indexs *fayCache.Cache // key fid， value table
 	blocks *fayCache.Cache // key fid_blockOffset  value block []byte
 }
@@ -16,15 +16,15 @@ type blockBuffer struct {
 const defaultCacheSize = 1024
 
 // close
-func (c *cache) close() error {
+func (c *TableCache) close() error {
 	return nil
 }
 
 // newCache
-func newCache(opt *Options) *cache {
-	return &cache{indexs: fayCache.NewCache(defaultCacheSize), blocks: fayCache.NewCache(defaultCacheSize)}
+func newCache(opt *Options) *TableCache {
+	return &TableCache{indexs: fayCache.NewCache(defaultCacheSize), blocks: fayCache.NewCache(defaultCacheSize)}
 }
 
-func (c *cache) addIndex(fid uint64, t *table) {
+func (c *TableCache) addIndex(fid uint64, t *table) {
 	c.indexs.Set(fid, t)
 }
