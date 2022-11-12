@@ -4,6 +4,7 @@ import (
 	"fmt"
 	faycache "github.com/Kirov7/FayKV/cache"
 	"github.com/Kirov7/FayKV/inmemory"
+	"github.com/Kirov7/FayKV/pb"
 	"github.com/Kirov7/FayKV/utils"
 	"github.com/pkg/errors"
 	"math"
@@ -68,6 +69,28 @@ func newTableBuilder(opt *Options) *tableBuilder {
 
 func (tb *tableBuilder) flush(lm *levelManager, tableName string) (t *table, err error) {
 	panic("todo")
+}
+
+func (tb *tableBuilder) done() buildData {
+	tb.finishBlock()
+	if len(tb.blockList) == 0 {
+		return buildData{}
+	}
+	bd := buildData{
+		blockList: tb.blockList,
+	}
+
+	var f faycache.Filter
+	if tb.opt.BloomFalsePositive > 0 {
+		f = faycache.BuildBloomFilter(tb.keyHashes, tb.opt.BloomFalsePositive)
+	}
+	// TODO 构建 sst的索引
+	index, dataSize := tb.buildIndex(f)
+	checksum := tb.calculateChecksum(index)
+	bd.index = index
+	bd.checksum = checksum
+	bd.size = int(dataSize) + len(index) + len(checksum) + 4 + 4
+	return bd
 }
 
 // add encode a kv instance into the sst file
@@ -159,8 +182,44 @@ func (tb *tableBuilder) finishBlock() {
 	tb.estimateSz += tb.curBlock.estimateSz
 	tb.blockList = append(tb.blockList, tb.curBlock)
 	tb.keyCount += uint32(len(tb.curBlock.entryOffsets))
-	tb.curBlock = nil // 表示当前block 已经被序列化到内存
+	tb.curBlock = nil // Indicates that the current block has been serialized to memory
 	return
+}
+
+func (tb tableBuilder) buildIndex(bloom []byte) ([]byte, uint32) {
+	tableIndex := &pb.TableIndex{}
+	if len(bloom) > 0 {
+		tableIndex.BloomFilter = bloom
+	}
+	tableIndex.KeyCount = tb.keyCount
+	tableIndex.MaxVersion = tb.maxVersion
+	tableIndex.Offsets = tb.writeBlockOffsets(tableIndex)
+	var dataSize uint32
+	for i := range tb.blockList {
+		dataSize += uint32(tb.blockList[i].end)
+	}
+	data, err := tableIndex.Marshal()
+	utils.Panic(err)
+	return data, dataSize
+}
+
+func (tb *tableBuilder) writeBlockOffsets(tableIndex *pb.TableIndex) []*pb.BlockOffset {
+	var startOffset uint32
+	var offsets []*pb.BlockOffset
+	for _, bl := range tb.blockList {
+		offset := tb.writeBlockOffset(bl, startOffset)
+		offsets = append(offsets, offset)
+		startOffset += uint32(bl.end)
+	}
+	return offsets
+}
+
+func (b *tableBuilder) writeBlockOffset(bl *block, startOffset uint32) *pb.BlockOffset {
+	offset := &pb.BlockOffset{}
+	offset.Key = bl.baseKey
+	offset.Len = uint32(bl.end)
+	offset.Offset = startOffset
+	return offset
 }
 
 // append appends to curBlock.data
@@ -194,6 +253,11 @@ func (tb *tableBuilder) keyDiff(newKey []byte) []byte {
 	return newKey[i:]
 }
 
+func (tb *tableBuilder) calculateChecksum(data []byte) []byte {
+	checkSum := utils.CalculateChecksum(data)
+	return utils.U64ToBytes(checkSum)
+}
+
 type blockIterator struct {
 	data         []byte
 	idx          int
@@ -210,9 +274,4 @@ type blockIterator struct {
 	prevOverlap uint16
 
 	it utils.Item
-}
-
-func (tb *tableBuilder) calculateChecksum(data []byte) []byte {
-	checkSum := utils.CalculateChecksum(data)
-	return utils.U64ToBytes(checkSum)
 }
