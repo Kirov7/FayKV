@@ -134,6 +134,12 @@ func (ss *SSTable) FID() uint64 {
 	return ss.fid
 }
 
+// Bytes returns data starting from offset off of size sz. If there's not enough data, it would
+// return nil slice and io.EOF.
+func (ss *SSTable) Bytes(off, sz int) ([]byte, error) {
+	return ss.f.Bytes(off, sz)
+}
+
 func FileNameSSTable(dir string, id uint64) string {
 	return filepath.Join(dir, fmt.Sprintf("%05d.sst", id))
 }

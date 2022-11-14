@@ -5,9 +5,11 @@ import (
 	faycache "github.com/Kirov7/FayKV/cache"
 	"github.com/Kirov7/FayKV/inmemory"
 	"github.com/Kirov7/FayKV/pb"
+	"github.com/Kirov7/FayKV/persistent"
 	"github.com/Kirov7/FayKV/utils"
 	"github.com/pkg/errors"
 	"math"
+	"os"
 	"unsafe"
 )
 
@@ -68,7 +70,23 @@ func newTableBuilder(opt *Options) *tableBuilder {
 }
 
 func (tb *tableBuilder) flush(lm *levelManager, tableName string) (t *table, err error) {
-	panic("todo")
+	bd := tb.done()
+	t = &table{lm: lm, fid: utils.FID(tableName)}
+	t.ss = persistent.OpenSSTable(&persistent.Options{
+		FileName: tableName,
+		Dir:      lm.opt.WorkDir,
+		Flag:     os.O_CREATE | os.O_RDWR,
+		MaxSize:  bd.size,
+	})
+	buf := make([]byte, bd.size)
+	written := bd.Copy(buf)
+	utils.CondPanic(written != len(buf), fmt.Errorf("tableBuilder.flush written != len(buf)"))
+	dst, err := t.ss.Bytes(0, bd.size)
+	if err != nil {
+		return nil, err
+	}
+	copy(dst, buf)
+	return t, nil
 }
 
 func (tb *tableBuilder) done() buildData {
@@ -256,6 +274,19 @@ func (tb *tableBuilder) keyDiff(newKey []byte) []byte {
 func (tb *tableBuilder) calculateChecksum(data []byte) []byte {
 	checkSum := utils.CalculateChecksum(data)
 	return utils.U64ToBytes(checkSum)
+}
+
+func (bd *buildData) Copy(dst []byte) int {
+	var written int
+	for _, bl := range bd.blockList {
+		written += copy(dst[written:], bl.data[:bl.end])
+	}
+	written += copy(dst[written:], bd.index)
+	written += copy(dst[written:], utils.U32ToBytes(uint32(len(bd.index))))
+
+	written += copy(dst[written:], bd.checksum)
+	written += copy(dst[written:], utils.U32ToBytes(uint32(len(bd.checksum))))
+	return written
 }
 
 type blockIterator struct {

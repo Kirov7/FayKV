@@ -4,6 +4,7 @@ import (
 	"fmt"
 	mmap "github.com/Kirov7/FayKV/persistent/syscall"
 	"github.com/pkg/errors"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -54,6 +55,15 @@ func OpenMmapFileSys(fd *os.File, size int, writable bool) (*MmapFile, error) {
 		Data: buf,
 		Fd:   fd,
 	}, err
+}
+
+// Bytes returns data starting from offset off of size sz. If there's not enough data, it would
+// return nil slice and io.EOF.
+func (m *MmapFile) Bytes(off, sz int) ([]byte, error) {
+	if len(m.Data[off:]) < sz {
+		return nil, io.EOF
+	}
+	return m.Data[off : off+sz], nil
 }
 
 func (m *MmapFile) Delete() error {
