@@ -53,7 +53,7 @@ func NewCache(size int) *Cache {
 }
 
 // Set
-//todo Optimize this method by using generics
+// todo Optimize this method by using generics
 func (c *Cache) Set(key, value interface{}) bool {
 	c.m.Lock()
 	defer c.m.Lock()
