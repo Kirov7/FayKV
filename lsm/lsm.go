@@ -72,6 +72,7 @@ func (lsm *LSM) Close() error {
 	panic("todo")
 }
 
+// Seal seal the full memTable
 func (lsm *LSM) Seal() {
 	lsm.immutables = append(lsm.immutables, lsm.memTable)
 	lsm.memTable = lsm.NewMemtable()

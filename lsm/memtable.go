@@ -6,6 +6,7 @@ import (
 	"github.com/Kirov7/FayKV/inmemory"
 	"github.com/Kirov7/FayKV/persistent"
 	"github.com/Kirov7/FayKV/utils"
+	"github.com/pkg/errors"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -31,6 +32,26 @@ func (lsm *LSM) NewMemtable() *memTable {
 	return &memTable{wal: persistent.OpenWalFile(fileOpt), sl: inmemory.NewSkipList(int64(1 << 20)), lsm: lsm}
 }
 
+func (lsm *LSM) openMemTable(fid uint64) (*memTable, error) {
+	fileOpt := &persistent.Options{
+		Dir:      lsm.option.WorkDir,
+		Flag:     os.O_CREATE | os.O_RDWR,
+		MaxSize:  int(lsm.option.MemTableSize),
+		FID:      fid,
+		FileName: mtFilePath(lsm.option.WorkDir, fid),
+	}
+	s := inmemory.NewSkipList(int64(1 << 20))
+	mt := &memTable{
+		sl:  s,
+		buf: &bytes.Buffer{},
+		lsm: lsm,
+	}
+	mt.wal = persistent.OpenWalFile(fileOpt)
+	err := mt.UpdateSkipList()
+	utils.CondPanic(err != nil, errors.WithMessage(err, "while updating skiplist"))
+	return mt, nil
+}
+
 func (m *memTable) set(entry *utils.Entry) error {
 	// 写到wal 日志中，防止崩溃
 	if err := m.wal.Write(entry); err != nil {
@@ -47,6 +68,10 @@ func (m *memTable) close() error {
 	}
 
 	return nil
+}
+
+func (m *memTable) UpdateSkipList() error {
+	panic("todo")
 }
 
 func mtFilePath(dir string, fid uint64) string {

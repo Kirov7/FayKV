@@ -3,6 +3,7 @@ package persistent
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"github.com/Kirov7/FayKV/utils"
 	"hash/crc32"
 	"io"
@@ -57,8 +58,28 @@ func OpenWalFile(opt *Options) *WalFile {
 	return wf
 }
 
-func (wf WalFile) Write(entry *utils.Entry) error {
-	panic("todo")
+func (wf *WalFile) Write(entry *utils.Entry) error {
+	wf.lock.Lock()
+	plen := WalCodec(wf.buf, entry)
+	buf := wf.buf.Bytes()
+	utils.Panic(wf.f.AppendBuffer(wf.writeAt, buf))
+	wf.writeAt = uint32(plen)
+	wf.lock.Unlock()
+	return nil
+}
+
+// Truncate _
+func (wf *WalFile) Truncate(end int64) error {
+	if end <= 0 {
+		return nil
+	}
+	if fi, err := wf.f.Fd.Stat(); err != nil {
+		return fmt.Errorf("while file.stat on file: %s, error: %v\n", wf.Name(), err)
+	} else if fi.Size() == end {
+		return nil
+	}
+	wf.size = uint32(end)
+	return wf.f.Truncature(end)
 }
 
 const maxHeaderSize int = 21

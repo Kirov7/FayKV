@@ -57,6 +57,31 @@ func OpenMmapFileSys(fd *os.File, size int, writable bool) (*MmapFile, error) {
 	}, err
 }
 
+// AppendBuffer Append a buffer to the memory and remap it to expand it if space runs out
+func (m *MmapFile) AppendBuffer(offset uint32, buf []byte) error {
+	const oneGB = 1 << 30
+	size := len(m.Data)
+	needSize := len(buf)
+	end := int(offset) + needSize
+	if end > size {
+		growBy := size
+		if growBy > oneGB {
+			growBy = oneGB
+		}
+		if growBy < needSize {
+			growBy = needSize
+		}
+		if err := m.Truncature(int64(end)); err != nil {
+			return err
+		}
+	}
+	dLen := copy(m.Data[offset:end], buf)
+	if dLen != needSize {
+		return errors.Errorf("dLen != needSize AppendBuffer failed")
+	}
+	return nil
+}
+
 // Bytes returns data starting from offset off of size sz. If there's not enough data, it would
 // return nil slice and io.EOF.
 func (m *MmapFile) Bytes(off, sz int) ([]byte, error) {
@@ -116,4 +141,18 @@ func SyncDir(dir string) error {
 		return errors.Wrapf(err, "closing error: %s", dir)
 	}
 	return nil
+}
+
+// Truncature _
+func (m *MmapFile) Truncature(maxSz int64) error {
+	if err := m.Sync(); err != nil {
+		return fmt.Errorf("while sync file: %s, error: %v\n", m.Fd.Name(), err)
+	}
+	if err := m.Fd.Truncate(maxSz); err != nil {
+		return fmt.Errorf("while truncate file: %s, error: %v\n", m.Fd.Name(), err)
+	}
+
+	var err error
+	m.Data, err = mmap.Mremap(m.Data, int(maxSz)) // Mmap up to max size.
+	return err
 }
