@@ -299,6 +299,10 @@ func (bd *buildData) Copy(dst []byte) int {
 	return written
 }
 
+func (b block) verifyCheckSum() error {
+	return utils.VerifyChecksum(b.data, b.checksum)
+}
+
 type blockIterator struct {
 	data         []byte
 	idx          int
@@ -315,4 +319,55 @@ type blockIterator struct {
 	prevOverlap uint16
 
 	it utils.Item
+}
+
+func (itr *blockIterator) setBlock(b *block) {
+	panic("todo")
+}
+
+func (itr *blockIterator) Next() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (itr *blockIterator) Valid() bool {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (itr *blockIterator) Rewind() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (itr *blockIterator) Item() utils.Item {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (itr *blockIterator) Close() error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (itr *blockIterator) Seek(key []byte) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (itr *blockIterator) Error() error {
+	return itr.err
+}
+
+// seekToFirst brings us to the first element.
+func (itr *blockIterator) seekToFirst() {
+	itr.setIdx(0)
+}
+
+func (itr *blockIterator) seekToLast() {
+	itr.setIdx(len(itr.entryOffsets) - 1)
+}
+
+func (itr *blockIterator) setIdx(i int) {
+	panic("todo")
 }

@@ -18,6 +18,19 @@ func BytesToU64(b []byte) uint64 {
 	return binary.BigEndian.Uint64(b)
 }
 
+// BytesToU32Slice converts the given byte slice to uint32 slice
+func BytesToU32Slice(b []byte) []uint32 {
+	if len(b) == 0 {
+		return nil
+	}
+	var u32s []uint32
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&u32s))
+	hdr.Len = len(b) / 4
+	hdr.Cap = hdr.Len
+	hdr.Data = uintptr(unsafe.Pointer(&b[0]))
+	return u32s
+}
+
 // U32SliceToBytes converts the given Uint32 slice to byte slice
 func U32SliceToBytes(u32s []uint32) []byte {
 	if len(u32s) == 0 {
