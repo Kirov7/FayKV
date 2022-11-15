@@ -75,5 +75,5 @@ func (lsm *LSM) Close() error {
 // Seal seal the full memTable
 func (lsm *LSM) Seal() {
 	lsm.immutables = append(lsm.immutables, lsm.memTable)
-	lsm.memTable = lsm.NewMemtable()
+	lsm.memTable = lsm.NewMemTable()
 }

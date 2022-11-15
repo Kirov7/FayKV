@@ -20,7 +20,7 @@ type memTable struct {
 	maxVersion uint64
 }
 
-func (lsm *LSM) NewMemtable() *memTable {
+func (lsm *LSM) NewMemTable() *memTable {
 	newFid := atomic.AddUint64(&(lsm.levels.maxFID), 1)
 	fileOpt := &persistent.Options{
 		FID:      newFid,
