@@ -11,8 +11,9 @@ import (
 	"sync/atomic"
 )
 
+// An SSTable object that contains handles in memory
 type table struct {
-	ss  *persistent.SSTable
+	sst *persistent.SSTable
 	lm  *levelManager
 	fid uint64
 	ref int32 // For file garbage collection. Atomic.
@@ -35,7 +36,7 @@ func openTable(lm *levelManager, tableName string, builder *tableBuilder) *table
 		}
 	} else {
 		t = &table{lm: lm, fid: fid}
-		t.ss = persistent.OpenSSTable(&persistent.Options{
+		t.sst = persistent.OpenSSTable(&persistent.Options{
 			FileName: tableName,
 			Dir:      lm.opt.WorkDir,
 			Flag:     os.O_CREATE | os.O_RDWR,
@@ -44,7 +45,7 @@ func openTable(lm *levelManager, tableName string, builder *tableBuilder) *table
 	}
 	t.IncrRef()
 	// init sstable file load index
-	if err := t.ss.Init(); err != nil {
+	if err := t.sst.Init(); err != nil {
 		return nil
 	}
 	// get the max key of the sst from iterator
@@ -54,7 +55,7 @@ func openTable(lm *levelManager, tableName string, builder *tableBuilder) *table
 	itr.Rewind()
 	utils.CondPanic(!itr.Valid(), errors.Errorf("failed to read index, form maxKey"))
 	maxKey := itr.Item().Entry().Key
-	t.ss.SetMaxKey(maxKey)
+	t.sst.SetMaxKey(maxKey)
 	return t
 }
 
@@ -71,7 +72,7 @@ func (t *table) blockCacheKey(idx int) []byte {
 }
 
 func (t *table) Delete() error {
-	return t.ss.Detele()
+	return t.sst.Detele()
 }
 
 // DecrRef decrements the refcount and possibly deletes the table
@@ -79,7 +80,7 @@ func (t *table) DecrRef() error {
 	newRef := atomic.AddInt32(&t.ref, -1)
 	if newRef == 0 {
 		// TODO 从缓存中删除
-		for i := 0; i < len(t.ss.Indexs().GetOffsets()); i++ {
+		for i := 0; i < len(t.sst.Indexs().GetOffsets()); i++ {
 			t.lm.cache.blocks.Del(t.blockCacheKey(i))
 		}
 		if err := t.Delete(); err != nil {

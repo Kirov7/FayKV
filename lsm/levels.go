@@ -20,6 +20,7 @@ func (lsm *LSM) initLevelManager(opt *Options) *levelManager {
 	lm := &levelManager{lsm: lsm}
 	lm.compactState = lsm.newCompactStatus()
 	lm.opt = opt
+	// Read the index information of the manifest file
 	utils.Panic(lm.loadManifest())
 	lm.build()
 	return lm
@@ -33,6 +34,7 @@ func (lm *levelManager) build() error {
 	panic("todo")
 }
 
+// flush flush memtable to sstable ondisk
 func (lm *levelManager) flush(immutable *memTable) error {
 	// Assign a fid
 	fid := immutable.wal.Fid()

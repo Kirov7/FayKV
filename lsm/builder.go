@@ -38,9 +38,9 @@ type block struct {
 	checksum          []byte
 	entriesIndexStart int
 	chkLen            int
-	data              []byte
-	baseKey           []byte
-	entryOffsets      []uint32
+	data              []byte   // the real kv_data
+	baseKey           []byte   // the first key be written of the block
+	entryOffsets      []uint32 // the offset of each key
 	end               int
 	estimateSz        int64
 }
@@ -72,7 +72,7 @@ func newTableBuilder(opt *Options) *tableBuilder {
 func (tb *tableBuilder) flush(lm *levelManager, tableName string) (t *table, err error) {
 	bd := tb.done()
 	t = &table{lm: lm, fid: utils.FID(tableName)}
-	t.ss = persistent.OpenSSTable(&persistent.Options{
+	t.sst = persistent.OpenSSTable(&persistent.Options{
 		FileName: tableName,
 		Dir:      lm.opt.WorkDir,
 		Flag:     os.O_CREATE | os.O_RDWR,
@@ -81,15 +81,17 @@ func (tb *tableBuilder) flush(lm *levelManager, tableName string) (t *table, err
 	buf := make([]byte, bd.size)
 	written := bd.Copy(buf)
 	utils.CondPanic(written != len(buf), fmt.Errorf("tableBuilder.flush written != len(buf)"))
-	dst, err := t.ss.Bytes(0, bd.size)
+	dst, err := t.sst.Bytes(0, bd.size)
 	if err != nil {
 		return nil, err
 	}
+	// copy to the mmap buf
 	copy(dst, buf)
 	return t, nil
 }
 
 func (tb *tableBuilder) done() buildData {
+	// finish the current active block
 	tb.finishBlock()
 	if len(tb.blockList) == 0 {
 		return buildData{}
@@ -102,7 +104,8 @@ func (tb *tableBuilder) done() buildData {
 	if tb.opt.BloomFalsePositive > 0 {
 		f = faycache.BuildBloomFilter(tb.keyHashes, tb.opt.BloomFalsePositive)
 	}
-	// TODO 构建 sst的索引
+
+	// when all the block are finish, then build the index of the SST
 	index, dataSize := tb.buildIndex(f)
 	checksum := tb.calculateChecksum(index)
 	bd.index = index
@@ -122,6 +125,7 @@ func (tb *tableBuilder) add(entry *utils.Entry, isStale bool) {
 	}
 	// Check if new blocks are needed
 	if tb.tryFinishBlock(entry) {
+		// check if cold block
 		if isStale {
 			tb.staleDataSize += len(key) + 4 + 4
 		}
@@ -129,6 +133,7 @@ func (tb *tableBuilder) add(entry *utils.Entry, isStale bool) {
 		// create new block and start writing
 		tb.curBlock = &block{data: make([]byte, tb.opt.BlockSize)}
 	}
+	// Parse delete ts, add to the hash list, all the key will save a hash value
 	tb.keyHashes = append(tb.keyHashes, faycache.Hash(inmemory.ParseKey(key)))
 	if version := inmemory.ParseTs(key); version > tb.maxVersion {
 		tb.maxVersion = version
@@ -136,6 +141,7 @@ func (tb *tableBuilder) add(entry *utils.Entry, isStale bool) {
 
 	var diffKey []byte
 	if len(tb.curBlock.baseKey) == 0 {
+		// first time to write
 		tb.curBlock.baseKey = append(tb.curBlock.baseKey[:0], key...)
 		diffKey = key
 	} else {
@@ -167,7 +173,7 @@ func (tb *tableBuilder) tryFinishBlock(entry *utils.Entry) bool {
 		return false
 	}
 	// len(tb.curBlock.entryOffsets))+1: The number of kv in the original block + the new kv we want to add (1)
-	// *4: Each entry consumes 4 song bytes
+	// *4: Each entry consumes 4 long bytes
 	// +4: offset_len uint32
 	// +8: checksum uint64
 	// +4: checksum_len uint32
@@ -199,6 +205,7 @@ func (tb *tableBuilder) finishBlock() {
 	tb.append(utils.U32ToBytes(uint32(len(checksum))))
 	tb.estimateSz += tb.curBlock.estimateSz
 	tb.blockList = append(tb.blockList, tb.curBlock)
+	// add the key's num for statistic meta
 	tb.keyCount += uint32(len(tb.curBlock.entryOffsets))
 	tb.curBlock = nil // Indicates that the current block has been serialized to memory
 	return
@@ -253,6 +260,7 @@ func (tb tableBuilder) allocate(need int) []byte {
 		if bb.end+need > sz {
 			sz = bb.end + need
 		}
+		//todo make a Memory allocator to improve here
 		tmp := make([]byte, sz)
 		copy(tmp, bb.data)
 		bb.data = tmp
@@ -261,6 +269,7 @@ func (tb tableBuilder) allocate(need int) []byte {
 	return bb.data[bb.end-need : bb.end]
 }
 
+// keyDiff Prefix matching
 func (tb *tableBuilder) keyDiff(newKey []byte) []byte {
 	var i int
 	for i = 0; i < len(newKey) && i < len(tb.curBlock.baseKey); i++ {
@@ -276,6 +285,7 @@ func (tb *tableBuilder) calculateChecksum(data []byte) []byte {
 	return utils.U64ToBytes(checkSum)
 }
 
+// Copy copy data to the specified byte array
 func (bd *buildData) Copy(dst []byte) int {
 	var written int
 	for _, bl := range bd.blockList {

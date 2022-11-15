@@ -56,6 +56,7 @@ func (ss *SSTable) Init() error {
 	return nil
 }
 
+// Map sst data from hard disk to memory
 func (ss *SSTable) initTable() (blockOffset *pb.BlockOffset, err error) {
 	readPos := len(ss.f.Data)
 

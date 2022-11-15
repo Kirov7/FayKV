@@ -36,6 +36,7 @@ func OpenMmapFileSys(fd *os.File, size int, writable bool) (*MmapFile, error) {
 
 	fileSize := fi.Size()
 	if size > 0 && fileSize == 0 {
+		// if file is empty then truncate it
 		err = fd.Truncate(int64(size))
 		if err != nil {
 			return nil, errors.Wrapf(err, "turncate error: %s", filename)
