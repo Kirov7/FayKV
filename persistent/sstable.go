@@ -126,6 +126,10 @@ func (ss *SSTable) readCheckError(off, sz int) []byte {
 	return buf
 }
 
+func (ss *SSTable) Close() error {
+	return ss.f.Close()
+}
+
 func (ss *SSTable) Indexs() *pb.TableIndex {
 	return ss.idxTables
 }
@@ -133,6 +137,21 @@ func (ss *SSTable) Indexs() *pb.TableIndex {
 // FID get fid
 func (ss *SSTable) FID() uint64 {
 	return ss.fid
+}
+
+// MaxKey The current maximum key
+func (ss *SSTable) MaxKey() []byte {
+	return ss.maxKey
+}
+
+// MinKey The current minimum key
+func (ss *SSTable) MinKey() []byte {
+	return ss.minKey
+}
+
+// HasBloomFilter _
+func (ss *SSTable) HasBloomFilter() bool {
+	return ss.hasBloomFilter
 }
 
 // Bytes returns data starting from offset off of size sz. If there's not enough data, it would

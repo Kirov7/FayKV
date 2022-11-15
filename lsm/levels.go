@@ -1,6 +1,7 @@
 package lsm
 
 import (
+	"bytes"
 	"github.com/Kirov7/FayKV/persistent"
 	"github.com/Kirov7/FayKV/utils"
 	"sync"
@@ -11,7 +12,7 @@ type levelManager struct {
 	opt          *Options
 	cache        *TableCache
 	manifestFile *persistent.ManifestFile
-	levels       []*levelHandler
+	levels       []*levelHandler // Each layer has a handler
 	lsm          *LSM
 	compactState *compactStatus
 }
@@ -58,14 +59,79 @@ func (lm *levelManager) flush(immutable *memTable) error {
 	return nil
 }
 
-type levelHandler struct {
-	sync.RWMutex
-	tables []*table
-	//todo
+func (lm *levelManager) Get(key []byte) (*utils.Entry, error) {
+	// query in l0
+	if entry, err := lm.levels[0].Get(key); entry != nil {
+		return entry, err
+	}
+	// query in l1-7
+	for level := 1; level < lm.opt.MaxLevelNum; level++ {
+		ld := lm.levels[level]
+		if entry, err := ld.Get(key); entry != nil {
+			return entry, err
+		}
+	}
+	return nil, utils.ErrKeyNotFound
 }
 
+type levelHandler struct {
+	sync.RWMutex
+	levelNum       int
+	tables         []*table
+	totalSize      int64
+	totalStaleSize int64
+	lm             *levelManager
+}
+
+func (lh *levelHandler) close() error {
+	for i := range lh.tables {
+		if err := lh.tables[i].sst.Close(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 func (lh *levelHandler) add(t *table) {
 	lh.Lock()
 	defer lh.Unlock()
 	lh.tables = append(lh.tables, t)
+}
+
+func (lh *levelHandler) Get(key []byte) (*utils.Entry, error) {
+	if lh.levelNum == 0 {
+		return lh.searchL0SST(key)
+	} else {
+		return lh.searchLNSST(key)
+	}
+}
+
+func (lh *levelHandler) searchL0SST(key []byte) (*utils.Entry, error) {
+	var version uint64
+	for _, table := range lh.tables {
+		if entry, err := table.Search(key, &version); err != nil {
+			return entry, nil
+		}
+	}
+	return nil, utils.ErrKeyNotFound
+}
+
+func (lh *levelHandler) searchLNSST(key []byte) (*utils.Entry, error) {
+	table := lh.getTable(key)
+	var version uint64
+	if table == nil {
+		return nil, utils.ErrKeyNotFound
+	}
+	if entry, err := table.Search(key, &version); err != nil {
+		return entry, nil
+	}
+	return nil, utils.ErrKeyNotFound
+}
+
+func (lh *levelHandler) getTable(key []byte) *table {
+	for i := len(lh.tables); i >= 0; i-- {
+		if bytes.Compare(key, lh.tables[i].sst.MinKey()) > -1 && bytes.Compare(key, lh.tables[i].sst.MaxKey()) < 1 {
+			return lh.tables[i]
+		}
+	}
+	return nil
 }

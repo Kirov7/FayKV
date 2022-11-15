@@ -5,6 +5,7 @@ import "github.com/pkg/errors"
 var (
 	ErrChecksumMismatch = errors.New("checksum mismatch")
 	ErrEmptyKey         = errors.New("Key cannot be empty")
+	ErrKeyNotFound      = errors.New("Key Not Found")
 )
 
 // Panic if err != nil then panic

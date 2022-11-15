@@ -53,13 +53,25 @@ func (lsm *LSM) openMemTable(fid uint64) (*memTable, error) {
 }
 
 func (m *memTable) set(entry *utils.Entry) error {
-	// 写到wal 日志中，防止崩溃
+	// Write wal logs to prevent crashes
 	if err := m.wal.Write(entry); err != nil {
 		return err
 	}
-	// 写到memtable中
+	// Write to memtable
 	m.sl.Put(entry)
 	return nil
+}
+
+func (m *memTable) Get(key []byte) (*utils.Entry, error) {
+	vs := m.sl.Search(key)
+	e := &utils.Entry{
+		Key:       key,
+		Value:     vs.Value,
+		ExpiresAt: vs.ExpiresAt,
+		Meta:      vs.Meta,
+		Version:   vs.Version,
+	}
+	return e, nil
 }
 
 func (m *memTable) close() error {

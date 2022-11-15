@@ -38,7 +38,7 @@ func NewLSM(opt *Options) *LSM {
 	return lsm
 }
 
-func (lsm LSM) Set(entry *utils.Entry) (err error) {
+func (lsm *LSM) Set(entry *utils.Entry) (err error) {
 	if entry == nil || len(entry.Key) == 0 {
 		return utils.ErrEmptyKey
 	}
@@ -62,6 +62,26 @@ func (lsm LSM) Set(entry *utils.Entry) (err error) {
 		lsm.immutables = make([]*memTable, 0)
 	}
 	return err
+}
+
+func (lsm LSM) Get(key []byte) (*utils.Entry, error) {
+	if len(key) == 0 {
+		return nil, utils.ErrEmptyKey
+	}
+	lsm.closer.Add(1)
+	defer lsm.closer.Done()
+	// Start by querying in the active table
+	if entry, err := lsm.memTable.Get(key); entry != nil && entry.Value != nil {
+		return entry, err
+	}
+	// Otherwise, query in the seal table (need to traverse from back to front)
+	for i := len(lsm.immutables) - 1; i >= 0; i-- {
+		if entry, err := lsm.immutables[i].Get(key); entry != nil && entry.Value != nil {
+			return entry, err
+		}
+	}
+	// If not found, query the sst
+	return lsm.levels.Get(key)
 }
 
 func (lsm *LSM) recovery() (*memTable, []*memTable) {

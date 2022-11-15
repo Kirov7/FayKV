@@ -3,6 +3,8 @@ package lsm
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/Kirov7/FayKV/cache"
+	"github.com/Kirov7/FayKV/inmemory"
 	"github.com/Kirov7/FayKV/persistent"
 	"github.com/Kirov7/FayKV/utils"
 	"github.com/pkg/errors"
@@ -59,6 +61,31 @@ func openTable(lm *levelManager, tableName string, builder *tableBuilder) *table
 	return t
 }
 
+func (t *table) Search(key []byte, maxVs *uint64) (entry *utils.Entry, err error) {
+	t.IncrRef()
+	defer t.DecrRef()
+	idx := t.sst.Indexs()
+	bloomFilter := cache.Filter(idx.BloomFilter)
+	if t.sst.HasBloomFilter() && !bloomFilter.BlContains(key) {
+		return nil, utils.ErrKeyNotFound
+	}
+	iter := t.NewIterator(&utils.Options{})
+	defer iter.Close()
+
+	iter.Seek(key)
+	if !iter.Valid() {
+		return nil, utils.ErrKeyNotFound
+	}
+
+	if inmemory.SameKey(key, iter.Item().Entry().Key) {
+		if version := inmemory.ParseTs(iter.Item().Entry().Key); *maxVs < version {
+			*maxVs = version
+			return iter.Item().Entry(), nil
+		}
+	}
+	return nil, utils.ErrKeyNotFound
+}
+
 // blockCacheKey is used to store blocks in the block TableCache.
 func (t *table) blockCacheKey(idx int) []byte {
 	utils.CondPanic(t.fid >= math.MaxUint32, fmt.Errorf("t.fid >= math.MaxUint32"))
@@ -79,7 +106,7 @@ func (t *table) Delete() error {
 func (t *table) DecrRef() error {
 	newRef := atomic.AddInt32(&t.ref, -1)
 	if newRef == 0 {
-		// TODO 从缓存中删除
+		// TODO remove from cache
 		for i := 0; i < len(t.sst.Indexs().GetOffsets()); i++ {
 			t.lm.cache.blocks.Del(t.blockCacheKey(i))
 		}
@@ -121,32 +148,32 @@ func (t *table) NewIterator(options *utils.Options) utils.Iterator {
 	}
 }
 
-func (t tableIterator) Next() {
+func (t *tableIterator) Next() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (t tableIterator) Valid() bool {
+func (t *tableIterator) Valid() bool {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (t tableIterator) Rewind() {
+func (t *tableIterator) Rewind() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (t tableIterator) Item() utils.Item {
+func (t *tableIterator) Item() utils.Item {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (t tableIterator) Close() error {
+func (t *tableIterator) Close() error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (t tableIterator) Seek(key []byte) {
+func (t *tableIterator) Seek(key []byte) {
 	//TODO implement me
 	panic("implement me")
 }
