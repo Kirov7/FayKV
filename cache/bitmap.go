@@ -32,6 +32,29 @@ func (f Filter) Contains(bitPos uint32) bool {
 	return f[bitPos/8]&(1<<(bitPos%8)) != 0
 }
 
+func (f Filter) BlContains(key []byte) bool {
+	h := Hash(key)
+	if len(f) < 2 {
+		return false
+	}
+	k := f[len(f)-1]
+	if k > 30 {
+		// This is reserved for potentially new encodings for short Bloom filters.
+		// Consider it a match.
+		return true
+	}
+	nBits := uint32(8 * (len(f) - 1))
+	delta := h>>17 | h<<15
+	for j := uint8(0); j < k; j++ {
+		bitPos := h % nBits
+		if f[bitPos/8]&(1<<(bitPos%8)) == 0 {
+			return false
+		}
+		h += delta
+	}
+	return true
+}
+
 func (f Filter) Reset() {
 	for i := range f {
 		f[i] = 0
