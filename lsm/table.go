@@ -137,6 +137,7 @@ func (t *table) read(off, sz int) ([]byte, error) {
 	return t.sst.Bytes(off, sz)
 }
 
+// Load the block object corresponding to the sst
 func (t *table) block(idx int) (*block, error) {
 	utils.CondPanic(idx < 0, fmt.Errorf("idx=%d", idx))
 	if idx >= len(t.sst.Indexs().Offsets) {
@@ -150,17 +151,17 @@ func (t *table) block(idx int) (*block, error) {
 		return b, nil
 	}
 
-	var ko pb.BlockOffset
-	utils.CondPanic(!t.offsets(&ko, idx), fmt.Errorf("block t.offset id=%d", idx))
+	var bo pb.BlockOffset
+	utils.CondPanic(!t.offsets(&bo, idx), fmt.Errorf("block t.offset id=%d", idx))
 	b = &block{
-		offset: int(ko.GetOffset()),
+		offset: int(bo.GetOffset()),
 	}
 
 	var err error
-	if b.data, err = t.read(b.offset, int(ko.GetLen())); err != nil {
+	if b.data, err = t.read(b.offset, int(bo.GetLen())); err != nil {
 		return nil, errors.Wrapf(err,
 			"failed to read from sstable: %d at offset: %d, len: %d",
-			t.sst.FID(), b.offset, ko.GetLen())
+			t.sst.FID(), b.offset, bo.GetLen())
 	}
 
 	readPos := len(b.data) - 4 // First read checksum length.
