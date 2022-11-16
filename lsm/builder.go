@@ -1,6 +1,7 @@
 package lsm
 
 import (
+	"bytes"
 	"fmt"
 	faycache "github.com/Kirov7/FayKV/cache"
 	"github.com/Kirov7/FayKV/inmemory"
@@ -8,8 +9,10 @@ import (
 	"github.com/Kirov7/FayKV/persistent"
 	"github.com/Kirov7/FayKV/utils"
 	"github.com/pkg/errors"
+	"io"
 	"math"
 	"os"
+	"sort"
 	"unsafe"
 )
 
@@ -322,7 +325,16 @@ type blockIterator struct {
 }
 
 func (itr *blockIterator) setBlock(b *block) {
-	panic("todo")
+	itr.block = b
+	itr.err = nil
+	itr.idx = 0
+	itr.baseKey = itr.baseKey[:0]
+	itr.prevOverlap = 0
+	itr.key = itr.key[:0]
+	itr.val = itr.val[:0]
+	// Drop the index from the block. We don't need it anymore.
+	itr.data = b.data[:b.entriesIndexStart]
+	itr.entryOffsets = b.entryOffsets
 }
 
 func (itr *blockIterator) Next() {
@@ -351,8 +363,19 @@ func (itr *blockIterator) Close() error {
 }
 
 func (itr *blockIterator) Seek(key []byte) {
-	//TODO implement me
-	panic("implement me")
+	itr.err = nil
+	startIndex := 0 // This tells from which index we should start binary search.
+
+	foundEntryIdx := sort.Search(len(itr.entryOffsets), func(idx int) bool {
+		// If idx is less than start index then just return false.
+		if idx < startIndex {
+			return false
+		}
+		itr.setIdx(idx)
+		return inmemory.CompareKeys(itr.key, key) >= 0
+	})
+	itr.setIdx(foundEntryIdx)
+
 }
 
 func (itr *blockIterator) Error() error {
@@ -369,5 +392,59 @@ func (itr *blockIterator) seekToLast() {
 }
 
 func (itr *blockIterator) setIdx(i int) {
-	panic("todo")
+	itr.idx = i
+	if i >= len(itr.entryOffsets) || i < 0 {
+		itr.err = io.EOF
+		return
+	}
+	itr.err = nil
+	startOffset := int(itr.entryOffsets[i])
+
+	// Set base key.
+	if len(itr.baseKey) == 0 {
+		var baseHeader header
+		baseHeader.decode(itr.data)
+		itr.baseKey = itr.data[headerSize : headerSize+baseHeader.diff]
+	}
+
+	var endOffset int
+	// idx points to the last entry in the block.
+	if itr.idx+1 == len(itr.entryOffsets) {
+		endOffset = len(itr.data)
+	} else {
+		// idx point to some entry other than the last one in the block.
+		// EndOffset of the current entry is the start offset of the next entry.
+		endOffset = int(itr.entryOffsets[itr.idx+1])
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			var debugBuf bytes.Buffer
+			fmt.Fprintf(&debugBuf, "==== Recovered====\n")
+			fmt.Fprintf(&debugBuf, "Table ID: %d\nBlock ID: %d\nEntry Idx: %d\nData len: %d\n"+
+				"StartOffset: %d\nEndOffset: %d\nEntryOffsets len: %d\nEntryOffsets: %v\n",
+				itr.tableID, itr.blockID, itr.idx, len(itr.data), startOffset, endOffset,
+				len(itr.entryOffsets), itr.entryOffsets)
+			panic(debugBuf.String())
+		}
+	}()
+
+	entryData := itr.data[startOffset:endOffset]
+	var h header
+	h.decode(entryData)
+	if h.overlap > itr.prevOverlap {
+		itr.key = append(itr.key[:itr.prevOverlap], itr.baseKey[itr.prevOverlap:h.overlap]...)
+	}
+
+	itr.prevOverlap = h.overlap
+	valueOff := headerSize + h.diff
+	diffKey := entryData[headerSize:valueOff]
+	itr.key = append(itr.key[:h.overlap], diffKey...)
+	e := &utils.Entry{Key: itr.key}
+	val := &utils.ValueStruct{}
+	val.DecodeValue(entryData[valueOff:])
+	itr.val = val.Value
+	e.Value = val.Value
+	e.ExpiresAt = val.ExpiresAt
+	e.Meta = val.Meta
+	itr.it = &Item{e: e}
 }
