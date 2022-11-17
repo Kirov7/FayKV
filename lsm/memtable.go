@@ -58,7 +58,7 @@ func (m *memTable) set(entry *utils.Entry) error {
 		return err
 	}
 	// Write to memtable
-	m.sl.Put(entry)
+	m.sl.Set(entry)
 	return nil
 }
 

@@ -130,7 +130,7 @@ func (s *SkipList) getHead() *node {
 	return s.memPool.getNode(s.headOffset)
 }
 
-func (s *SkipList) Put(e *utils.Entry) {
+func (s *SkipList) Set(e *utils.Entry) {
 	// Since we allow overwrite, we may not need to create a new node. We might not even need to
 	// increase the height. Let's defer these actions.
 	key, v := e.Key, utils.ValueStruct{
