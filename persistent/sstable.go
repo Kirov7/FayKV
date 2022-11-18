@@ -160,6 +160,13 @@ func (ss *SSTable) Bytes(off, sz int) ([]byte, error) {
 	return ss.f.Bytes(off, sz)
 }
 
+// Size Returns the size of the underlying file
+func (ss *SSTable) Size() int64 {
+	fileStats, err := ss.f.Fd.Stat()
+	utils.Panic(err)
+	return fileStats.Size()
+}
+
 func FileNameSSTable(dir string, id uint64) string {
 	return filepath.Join(dir, fmt.Sprintf("%05d.sst", id))
 }

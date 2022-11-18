@@ -207,6 +207,12 @@ func (t *table) offsets(bo *pb.BlockOffset, i int) bool {
 	return true
 }
 
+// Size is its file size in bytes
+func (t *table) Size() int64 { return int64(t.sst.Size()) }
+
+// StaleDataSize is the amount of stale data (that can be dropped by a compaction )in this SST.
+func (t *table) StaleDataSize() uint32 { return t.sst.Indexs().StaleDataSize }
+
 type tableIterator struct {
 	it       utils.Item
 	opt      *utils.Options

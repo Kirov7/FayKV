@@ -6,6 +6,9 @@ var (
 	ErrChecksumMismatch = errors.New("checksum mismatch")
 	ErrEmptyKey         = errors.New("Key cannot be empty")
 	ErrKeyNotFound      = errors.New("Key Not Found")
+	ErrReWriteFailure   = errors.New("reWrite failure")
+	ErrBadMagic         = errors.New("bad magic")
+	ErrBadChecksum      = errors.New("bad check sum")
 )
 
 // Panic if err != nil then panic

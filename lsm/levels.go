@@ -2,9 +2,12 @@ package lsm
 
 import (
 	"bytes"
+	"github.com/Kirov7/FayKV/inmemory"
 	"github.com/Kirov7/FayKV/persistent"
 	"github.com/Kirov7/FayKV/utils"
+	"sort"
 	"sync"
+	"sync/atomic"
 )
 
 type levelManager struct {
@@ -27,12 +30,47 @@ func (lsm *LSM) initLevelManager(opt *Options) *levelManager {
 	return lm
 }
 
-func (lm *levelManager) loadManifest() error {
-	panic("todo")
+func (lm *levelManager) loadManifest() (err error) {
+	lm.manifestFile, err = persistent.OpenManifestFile(&persistent.Options{Dir: lm.opt.WorkDir})
+	return err
 }
 
 func (lm *levelManager) build() error {
-	panic("todo")
+	lm.levels = make([]*levelHandler, 0, lm.opt.MaxLevelNum)
+	for i := 0; i < lm.opt.MaxLevelNum; i++ {
+		lm.levels = append(lm.levels, &levelHandler{
+			levelNum: i,
+			tables:   make([]*table, 0),
+			lm:       lm,
+		})
+	}
+
+	manifest := lm.manifestFile.GetManifest()
+	// Compare the correctness of the manifest file
+	if err := lm.manifestFile.RevertToManifest(utils.LoadIDMap(lm.opt.WorkDir)); err != nil {
+		return err
+	}
+	// Load the index blocks of the sstable one by one to build the cache
+	lm.cache = newCache(lm.opt)
+	// TODO During initialization, the index structure is placed in the table, which means that all the data is loaded into the memory.
+	// This reduces one disk read but increases the memory consumption
+	var maxFID uint64
+	for fID, tableInfo := range manifest.Tables {
+		fileName := utils.FileNameSSTable(lm.opt.WorkDir, fID)
+		if fID > maxFID {
+			maxFID = fID
+		}
+		t := openTable(lm, fileName, nil)
+		lm.levels[tableInfo.Level].add(t)
+		lm.levels[tableInfo.Level].addSize(t) // Records the total file size of a level
+	}
+	// Sort each layer
+	for i := 0; i < lm.opt.MaxLevelNum; i++ {
+		lm.levels[i].Sort()
+	}
+	// Get the maximum fid value
+	atomic.AddUint64(&lm.maxFID, maxFID)
+	return nil
 }
 
 // flush flush memtable to sstable ondisk
@@ -51,7 +89,7 @@ func (lm *levelManager) flush(immutable *memTable) error {
 	table := openTable(lm, sstName, builder)
 	err := lm.manifestFile.AddTableMeta(0, &persistent.TableMeta{
 		ID:       fid,
-		Checksum: []byte{'f', 'a', 'y', 'd', 'b'},
+		Checksum: []byte{'m', 'o', 'c', 'k'},
 	})
 	utils.Panic(err)
 	// The metadata must be updated after the data has been successfully written to the file
@@ -103,6 +141,28 @@ func (lh *levelHandler) Get(key []byte) (*utils.Entry, error) {
 	} else {
 		return lh.searchLNSST(key)
 	}
+}
+
+func (lh *levelHandler) Sort() {
+	lh.Lock()
+	defer lh.Unlock()
+	if lh.levelNum == 0 {
+		// Key range will overlap. Just sort by fileID in ascending order
+		// because newer tables are at the end of level 0.
+		sort.Slice(lh.tables, func(i, j int) bool {
+			return lh.tables[i].fid < lh.tables[j].fid
+		})
+	} else {
+		// Sort tables by keys.
+		sort.Slice(lh.tables, func(i, j int) bool {
+			return inmemory.CompareKeys(lh.tables[i].sst.MinKey(), lh.tables[j].sst.MinKey()) < 0
+		})
+	}
+}
+
+func (lh *levelHandler) addSize(t *table) {
+	lh.totalSize += t.Size()
+	lh.totalStaleSize += int64(t.StaleDataSize())
 }
 
 func (lh *levelHandler) searchL0SST(key []byte) (*utils.Entry, error) {
