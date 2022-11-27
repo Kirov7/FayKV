@@ -17,8 +17,8 @@ const (
 
 // codec
 var (
-	MagicText    = [4]byte{'F', 'A', 'Y', '0'}
+	MagicText    = [4]byte{'F', 'A', 'Y', 'A'}
 	MagicVersion = uint32(1)
-	// CastagnoliCrcTable is a CRC32 polynomial table
+	// CastagnoliCrcTable is a CRC32 polynomial table (You can think of it as a salt)
 	CastagnoliCrcTable = crc32.MakeTable(crc32.Castagnoli)
 )

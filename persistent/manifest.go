@@ -55,6 +55,7 @@ func OpenManifestFile(opt *Options) (*ManifestFile, error) {
 			return mf, err
 		}
 		m := createManifest()
+		// Create a new ManifestFile
 		fp, netCreations, err := helpRewrite(opt.Dir, m)
 		utils.CondPanic(netCreations == 0, errors.Wrap(err, utils.ErrReWriteFailure.Error()))
 		if err != nil {
@@ -112,6 +113,7 @@ func (mf *ManifestFile) addChanges(changesParam []*pb.ManifestChange) error {
 			return err
 		}
 	} else {
+		// Encapsulate length and crc checksum
 		var lenCrcBuf [8]byte
 		binary.BigEndian.PutUint32(lenCrcBuf[0:4], uint32(len(buf)))
 		binary.BigEndian.PutUint32(lenCrcBuf[4:8], crc32.Checksum(buf, utils.CastagnoliCrcTable))
@@ -189,10 +191,12 @@ func ReplayManifestFile(fp *os.File) (ret *Manifest, truncOffset int64, err erro
 	if _, err := io.ReadFull(r, magicBuf[:]); err != nil {
 		return &Manifest{}, 0, utils.ErrBadMagic
 	}
+	// Verification magic number
 	if !bytes.Equal(magicBuf[0:4], utils.MagicText[:]) {
 		return &Manifest{}, 0, utils.ErrBadMagic
 	}
 	version := binary.BigEndian.Uint32(magicBuf[4:8])
+	// Verification version number
 	if version != uint32(utils.MagicVersion) {
 		return &Manifest{}, 0,
 			fmt.Errorf("manifest has unsupported version: %d (we support %d)", version, utils.MagicVersion)
@@ -200,6 +204,7 @@ func ReplayManifestFile(fp *os.File) (ret *Manifest, truncOffset int64, err erro
 
 	build := createManifest()
 	var offset int64
+	// Loop through the resolution of the change object
 	for {
 		offset = r.count
 		var lenCrcBuf [8]byte
@@ -210,6 +215,7 @@ func ReplayManifestFile(fp *os.File) (ret *Manifest, truncOffset int64, err erro
 			}
 			return &Manifest{}, 0, err
 		}
+		// The first four bytes are the length
 		length := binary.BigEndian.Uint32(lenCrcBuf[0:4])
 		var buf = make([]byte, length)
 		if _, err := io.ReadFull(r, buf); err != nil {
@@ -218,6 +224,7 @@ func ReplayManifestFile(fp *os.File) (ret *Manifest, truncOffset int64, err erro
 			}
 			return &Manifest{}, 0, err
 		}
+		// The fourth to eighth bytes are crc checkcodes
 		if crc32.Checksum(buf, utils.CastagnoliCrcTable) != binary.BigEndian.Uint32(lenCrcBuf[4:8]) {
 			return &Manifest{}, 0, utils.ErrBadChecksum
 		}
@@ -238,6 +245,7 @@ func ReplayManifestFile(fp *os.File) (ret *Manifest, truncOffset int64, err erro
 // This is not a "recoverable" error -- opening the KV store fails because the MANIFEST file is
 // just plain broken.
 func applyChangeSet(build *Manifest, changeSet *pb.ManifestChangeSet) error {
+	// Iterate over each change and apply it
 	for _, change := range changeSet.Changes {
 		if err := applyManifestChange(build, change); err != nil {
 			return err
