@@ -9,6 +9,8 @@ var (
 	ErrReWriteFailure   = errors.New("reWrite failure")
 	ErrBadMagic         = errors.New("bad magic")
 	ErrBadChecksum      = errors.New("bad check sum")
+	ErrTruncate         = errors.New("Do truncate")
+	ErrStop             = errors.New("Stop")
 )
 
 // Panic if err != nil then panic

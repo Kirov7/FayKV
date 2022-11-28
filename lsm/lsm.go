@@ -84,10 +84,6 @@ func (lsm LSM) Get(key []byte) (*utils.Entry, error) {
 	return lsm.levels.Get(key)
 }
 
-func (lsm *LSM) recovery() (*memTable, []*memTable) {
-	panic("todo")
-}
-
 func (lsm *LSM) Close() error {
 	panic("todo")
 }

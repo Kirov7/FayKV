@@ -157,3 +157,27 @@ func (m *MmapFile) Truncature(maxSz int64) error {
 	m.Data, err = mmap.Mremap(m.Data, int(maxSz)) // Mmap up to max size.
 	return err
 }
+
+type mmapReader struct {
+	Data   []byte
+	offset int
+}
+
+func (mr *mmapReader) Read(buf []byte) (int, error) {
+	if mr.offset > len(mr.Data) {
+		return 0, io.EOF
+	}
+	n := copy(buf, mr.Data[mr.offset:])
+	mr.offset += n
+	if n < len(buf) {
+		return n, io.EOF
+	}
+	return n, nil
+}
+
+func (m *MmapFile) NewReader(offset int) io.Reader {
+	return &mmapReader{
+		Data:   m.Data,
+		offset: offset,
+	}
+}

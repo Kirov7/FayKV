@@ -324,6 +324,10 @@ func (s *SkipList) findNear(key []byte, left bool, allowEqual bool) (*node, bool
 	}
 }
 
+// MemSize returns the size of the Skiplist in terms of how much memory is used within its internal
+// arena.
+func (s *SkipList) MemSize() int64 { return s.memPool.size() }
+
 // DecrRef decrements the refcount, deallocating the Skiplist when done using it
 func (s *SkipList) DecrRef() {
 	newRef := atomic.AddInt32(&s.ref, -1)

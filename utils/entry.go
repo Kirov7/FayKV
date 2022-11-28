@@ -17,6 +17,8 @@ type Entry struct {
 	ValThreshold int64
 }
 
+type LogEntry func(e *Entry, vp *ValuePtr) error
+
 func NewEntry(key, value []byte) *Entry {
 	return &Entry{
 		Key:   key,
@@ -36,6 +38,21 @@ func (e *Entry) Size() int64 {
 
 func (e *Entry) Entry() *Entry {
 	return e
+}
+
+// IsZero _
+func (e *Entry) IsZero() bool {
+	return len(e.Key) == 0
+}
+
+// LogHeaderLen _
+func (e *Entry) LogHeaderLen() int {
+	return e.Hlen
+}
+
+// LogOffset _
+func (e *Entry) LogOffset() uint32 {
+	return e.Offset
 }
 
 // EncodedSize is the size of the ValueStruct when encoded
