@@ -2,6 +2,7 @@ package FayKV
 
 import (
 	"github.com/Kirov7/FayKV/inmemory"
+	"github.com/Kirov7/FayKV/lsm"
 	"github.com/Kirov7/FayKV/utils"
 )
 
@@ -16,6 +17,7 @@ type KvAPI interface {
 
 type DB struct {
 	stats *Stats
+	lsm   *lsm.LSM
 }
 
 func (db *DB) Set(data *inmemory.Element) error {

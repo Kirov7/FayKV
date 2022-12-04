@@ -103,6 +103,15 @@ func (lsm *LSM) Close() error {
 	return nil
 }
 
+// StartCompacter _
+func (lsm *LSM) StartCompacter() {
+	n := lsm.option.NumCompactors
+	lsm.closer.Add(n)
+	for i := 0; i < n; i++ {
+		go lsm.levels.runCompacter(i)
+	}
+}
+
 // Seal seal the full memTable
 func (lsm *LSM) Seal() {
 	lsm.immutables = append(lsm.immutables, lsm.memTable)
