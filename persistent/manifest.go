@@ -86,6 +86,13 @@ func OpenManifestFile(opt *Options) (*ManifestFile, error) {
 	return mf, nil
 }
 
+func (mf *ManifestFile) Close() error {
+	if err := mf.f.Close(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (mf *ManifestFile) AddTableMeta(levelNum int, t *TableMeta) (err error) {
 	mf.addChanges([]*pb.ManifestChange{
 		newCreateChange(t.ID, levelNum, t.Checksum),

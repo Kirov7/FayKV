@@ -85,7 +85,22 @@ func (lsm LSM) Get(key []byte) (*utils.Entry, error) {
 }
 
 func (lsm *LSM) Close() error {
-	panic("todo")
+	lsm.closer.Close()
+	// TODO 需要加锁保证并发安全
+	if lsm.memTable != nil {
+		if err := lsm.memTable.close(); err != nil {
+			return err
+		}
+	}
+	for i := range lsm.immutables {
+		if err := lsm.immutables[i].close(); err != nil {
+			return err
+		}
+	}
+	if err := lsm.levels.close(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Seal seal the full memTable

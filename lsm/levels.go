@@ -30,6 +30,21 @@ func (lsm *LSM) initLevelManager(opt *Options) *levelManager {
 	return lm
 }
 
+func (lm *levelManager) close() error {
+	if err := lm.cache.close(); err != nil {
+		return err
+	}
+	if err := lm.manifestFile.Close(); err != nil {
+		return err
+	}
+	for i := range lm.levels {
+		if err := lm.levels[i].close(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (lm *levelManager) loadManifest() (err error) {
 	lm.manifestFile, err = persistent.OpenManifestFile(&persistent.Options{Dir: lm.opt.WorkDir})
 	return err
